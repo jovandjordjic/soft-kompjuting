@@ -46,7 +46,6 @@ class CrosswordCell:
     solution: str
     x: int
     y: int
-    arrows: list[CrosswordCellArrow]
 
 
 class Word:
@@ -90,10 +89,11 @@ class Crossword(CrosswordBaseData):
     def to_json(self):
         return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
 
-    words: list[Word]
+    words: list[str]  # todo: switch back to Word
     width: int
     height: int
 
+    cell_data: list[str]
 
 def helper_get_word_from_coordinates(x: WordCoordinatePair, y: WordCoordinatePair,
                                      cell_data: dict[int, dict[int, CrosswordCell]]) -> str:
@@ -125,42 +125,42 @@ def helper_parse_xml_coordinates(coordinates: str) -> WordCoordinatePair:
     return word_coordinate_pair
 
 
-def helper_convert_xml_cell_data_to_special_dict(xml_cell_data: list) -> dict[int, dict[int, CrosswordCell]]:
-    special_dict: dict[int, dict[int, CrosswordCell]] = {}
+def helper_convert_xml_cell_data_to_special_dict(xml_cell_data: list) -> list[str]:
+    special_dict: dict[int, dict[int, str]] = {}
+
+    return_list: list[str] = []
+
     for cell_dict in xml_cell_data:
         if '@solution' in cell_dict:
             cell: CrosswordCell = CrosswordCell()
-            x: int = int(cell_dict['@x'])
-            y: int = int(cell_dict['@y'])
+            x: int = int(cell_dict['@y'])
+            y: int = int(cell_dict['@x'])
 
             cell.x = x
             cell.y = y
-
-            if 'arrow' in cell_dict:
-                arrows: list[CrosswordCellArrow] = []
-                if isinstance(cell_dict['arrow'], list):
-                    for xml_arrow in cell_dict['arrow']:
-                        arrow: CrosswordCellArrow = CrosswordCellArrow()
-                        arrow.locationTo = xml_arrow['@to']
-                        arrow.locationFrom = xml_arrow['@from']
-
-                        arrows.append(arrow)
-                else:
-                    arrow: CrosswordCellArrow = CrosswordCellArrow()
-                    arrow.locationTo = cell_dict['arrow']['@to']
-                    arrow.locationFrom = cell_dict['arrow']['@from']
-                    arrows.append(arrow)
-
-                cell.arrows = arrows
 
             cell.solution = cell_dict['@solution']
 
             if x not in special_dict:
                 special_dict[x] = {}
 
-            special_dict[x][y] = cell
+            special_dict[x][y] = cell_dict['@solution']
+            # special_dict[x][y] = cell
 
-    return special_dict
+    sorted_by_x_dict = {key: val for key, val in sorted(special_dict.items(), key=lambda ele: ele[0])}
+
+    for key in sorted_by_x_dict:
+        y_dict = sorted_by_x_dict[key]
+        sorted_by_y_dict = {key: val for key, val in sorted(y_dict.items(), key=lambda ele: ele[0])}
+
+        return_string = ''
+
+        for letter in sorted_by_y_dict.values():
+            return_string += letter
+
+        return_list.append(return_string)
+
+    return return_list
 
 
 def combine_xml_data_and_crossword_base_data_into_crossword(xml_data,
@@ -171,7 +171,7 @@ def combine_xml_data_and_crossword_base_data_into_crossword(xml_data,
     grid_data: dict = crossword_puzzle_dict['grid']
     words_data: list = crossword_puzzle_dict['word']
 
-    cell_contents = helper_convert_xml_cell_data_to_special_dict(grid_data['cell'])
+    crossword.cell_data = helper_convert_xml_cell_data_to_special_dict(grid_data['cell'])
 
     crossword.height = int(grid_data['@height'])
     crossword.width = int(grid_data['@width'])
@@ -195,7 +195,7 @@ def combine_xml_data_and_crossword_base_data_into_crossword(xml_data,
         words.append(word)
         string_words.append(solution)
 
-    crossword.words = words
+    crossword.words = string_words
 
     return crossword
 
@@ -253,7 +253,7 @@ def get_crosswords():
     if not os.path.exists(shared_save_location):
         os.mkdir(shared_save_location)
 
-    for i in range(1, 2):
+    for i in range(20, 21):
         try:
             crossword_base_data_objects: list[CrosswordBaseData] = get_crosswords_from_website_page(i)
         except:
@@ -276,17 +276,17 @@ def get_crosswords():
                 file.write(pdf_data)
                 file.close()
 
-                try:
-                    pil_images = pdf2image.convert_from_path(
-                        f'{shared_save_location}/{crossword.name}/{crossword.name}.pdf', dpi=DPI,
-                        output_folder=f'{shared_save_location}/{crossword.name}',
-                        first_page=FIRST_PAGE, last_page=LAST_PAGE, fmt=FORMAT,
-                        thread_count=THREAD_COUNT, userpw=USERPWD,
-                        use_cropbox=USE_CROPBOX, strict=STRICT)
-
-                    pil_images[0].save(f'{shared_save_location}/{crossword.name}/{crossword.name}.jpg')
-                except Exception as e:
-                    print(e)
+                # try:
+                #     pil_images = pdf2image.convert_from_path(
+                #         f'{shared_save_location}/{crossword.name}/{crossword.name}.pdf', dpi=DPI,
+                #         output_folder=f'{shared_save_location}/{crossword.name}',
+                #         first_page=FIRST_PAGE, last_page=LAST_PAGE, fmt=FORMAT,
+                #         thread_count=THREAD_COUNT, userpw=USERPWD,
+                #         use_cropbox=USE_CROPBOX, strict=STRICT)
+                #
+                #     pil_images[0].save(f'{shared_save_location}/{crossword.name}/{crossword.name}.jpg')
+                # except Exception as e:
+                #     print(e)
 
                 json_data = crossword.to_json()
                 file = open(f'{shared_save_location}/{crossword.name}/{crossword.name}.json', 'w')

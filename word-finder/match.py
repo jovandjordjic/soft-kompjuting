@@ -253,12 +253,12 @@ if __name__ == '__main__':
         ['A', 'Lj', 'E', 'T', 'U', 'B', 'O', 'Lj', 'K', 'A', 'N', 'N'],
     ]
 
-matches = find_matches(puzzle2, words2)
+    matches = find_matches(puzzle2, words2)
 
-text_matches = []
-for match in matches:
-    text_matches.append(match.text)
+    text_matches = []
+    for match in matches:
+        text_matches.append(match.text)
 
-text_matches.sort()
+    text_matches.sort()
 
-print('matching done :)')
+    print('matching done :)')
