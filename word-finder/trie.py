@@ -24,6 +24,11 @@ def add_to_trie(word: str, node: TrieNode):
         return
 
     prefix: str = word[0]
+
+    if len(word) > 1 and (prefix == 'D' or prefix == 'N' or prefix == 'L'):
+        if word[1] == 'j' or word[1] == 'ž':
+            prefix += word[1]
+
     child: TrieNode = get_or_add(prefix, node)
 
     add_to_trie(word[1:], child)
@@ -47,6 +52,11 @@ def find_prefix_in_trie(word: str, node: TrieNode):
         return match_result
 
     prefix = word[0]
+
+    if len(word) > 1 and (prefix == 'D' or prefix == 'N' or prefix == 'L'):
+        if word[1] == 'j' or word[1] == 'ž':
+            prefix += word[1]
+
     child: TrieNode = node.children.get(prefix)
     if child is None:
         return None
